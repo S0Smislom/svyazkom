@@ -1,0 +1,6 @@
+pydantic-settings
+sqlalchemy[asyncio]
+alembic
+asyncpg
+psycopg2-binary
+aiohttp

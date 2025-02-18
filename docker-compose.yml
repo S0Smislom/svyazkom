@@ -1,0 +1,57 @@
+services:
+  example-db:
+    container_name: example-db
+    image: postgres:16-alpine
+    restart: on-failure
+    environment:
+      environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+      - ./db_dump:/db_dump
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      interval: 3s
+      timeout: 1s
+      retries: 10
+
+
+  example-api:
+    container_name: example-api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: on-failure
+    environment:
+      USERNAME: ${API_USERNAME}
+      PASSWORD: ${API_PASSWORD}
+    command: uvicorn main:app --host 0.0.0.0
+
+
+  example-migration:
+    container_name: example-migration
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    environment:
+      DB_URL: ${DB_URL}
+    command: bash -c "cd /code/app/adapters/repository/sqlalchemy && alembic upgrade head"
+    depends_on:
+      example-db:
+        condition: service_healthy
+
+
+  example-worker:
+    container_name: example-worker
+    restart: on-failure
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    command: python main.py .env
+    depends_on:
+      example-api:
+        condition: service_started
+      example-migration:
+        condition: service_completed_successfully
