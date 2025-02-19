@@ -23,7 +23,7 @@ class LocationComparisonMixin:
         return f"{obj.lac}:{obj.cellid}:{obj.eci}"
 
 
-class Location(BaseModel, LocationComparisonMixin):
+class Location(LocationComparisonMixin, BaseModel):
     id: int
     lac: Optional[int] = None
     cellid: Optional[int] = None
@@ -31,7 +31,7 @@ class Location(BaseModel, LocationComparisonMixin):
     note: Optional[str] = None
 
 
-class LocationCreate(BaseModel, LocationComparisonMixin):
+class LocationCreate(LocationComparisonMixin, BaseModel):
     lac: Optional[int] = Field(None, gt=0, lt=65535)
     cellid: Optional[int] = Field(None, gt=0, lt=65535)
     eci: Optional[int] = Field(None, gt=0, lt=268435455)
