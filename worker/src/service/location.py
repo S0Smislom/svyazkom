@@ -1,4 +1,5 @@
 import asyncio
+import bisect
 import logging
 from typing import List
 
@@ -26,15 +27,18 @@ class LocationService(ILocationService):
             self._remove_records(source_locations, db_locations),
         )
 
+    def _sort(self, data: List[LocationCreate]):
+        return sorted(data)
+
     async def _retrieve_from_source(self):
         res = await self.location_source.retrieve()
         logger.info(f"Retrieved from source: {len(res)}")
-        return res
+        return self._sort(res)
 
     async def _retrieve_from_db(self):
         res = await self.location_repository.get_all()
         logger.info(f"Retrieved from db: {len(res)}")
-        return res
+        return self._sort(res)
 
     async def _add_records(
         self, source_locations: List[LocationCreate], db_locations: List[Location]
@@ -57,7 +61,7 @@ class LocationService(ILocationService):
         logger.info(f"Removed: {len(objects_to_remove)}")
 
     def _object_in(self, obj: LocationCreate, locations: List[LocationCreate]):
-        for _ in locations:
-            if obj.cellid == _.cellid and obj.eci == _.eci and obj.lac == _.lac:
-                return True
+        i = bisect.bisect_left(locations, obj)
+        if i != len(locations) and locations[i] == obj:
+            return True
         return False
